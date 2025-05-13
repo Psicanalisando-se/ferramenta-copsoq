@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COPSOQ II - Correção e Interpretação</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .question-group { /* Agora é um fieldset */
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #e2e8f0; /* border-gray-300 */
+            border-radius: 0.5rem;
+            background-color: #f9fafb; /* bg-gray-50 */
+        }
+        .question-group legend {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            margin-bottom: 1rem;
+            padding: 0 0.5rem;
+            color: #4b5563; /* text-gray-600 */
+        }
+        .question-item {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .radio-label {
+            margin-right: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .radio-input {
+            margin-right: 0.3rem;
+        }
+        .results-table th, .results-table td {
+            border: 1px solid #e2e8f0; /* border-gray-300 */
+            padding: 0.5rem;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .result-green { background-color: #d1fae5; color: #065f46; } /* bg-green-100 text-green-800 */
+        .result-yellow { background-color: #fef3c7; color: #92400e; } /* bg-yellow-100 text-yellow-800 */
+        .result-red { background-color: #fee2e2; color: #991b1b; } /* bg-red-100 text-red-800 */
+
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 10;
+            padding-top: 1rem; 
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0; /* border-gray-300 */
+        }
+        .version-button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 500; /* medium */
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+            border: 1px solid transparent;
+        }
+        .version-button-active {
+            background-color: #f97316; /* bg-orange-500 */
+            color: white;
+            border-color: #f97316; /* border-orange-500 */
+        }
+        .version-button-inactive {
+            background-color: #e5e7eb; /* bg-gray-200 */
+            color: #374151; /* text-gray-700 */
+            border-color: #d1d5db; /* border-gray-300 */
+        }
+        .version-button-inactive:hover {
+            background-color: #d1d5db; /* bg-gray-300 */
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; /* gray-100 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a0aec0; /* gray-400 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* gray-500 */
+        }
+        input[type="radio"] {
+            transform: scale(1.2);
+            margin-right: 8px;
+        }
+        .radio-label {
+            padding: 8px 0;
+        }
+        .highlight-error {
+            background-color: #fee2e2 !important; /* bg-red-100 */
+            border: 2px solid #f87171 !important; /* border-red-400, mais espessa */
+            transition: background-color 0.5s ease, border-color 0.5s ease;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .text-custom-orange-700 { color: #c2410c; } 
+        .text-custom-orange-600 { color: #ea580c; } 
+        .bg-custom-orange-500 { background-color: #f97316; } 
+        .hover-bg-custom-orange-600:hover { background-color: #ea580c; } 
+        .border-custom-orange-500 { border-color: #f97316; }
+        .ring-custom-orange-500:focus { ring-color: #f97316; }
+        .text-custom-orange-600-radio { color: #ea580c; }
+
+        /* Progress Bar Styles */
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e5e7eb; /* bg-gray-200 */
+            border-radius: 0.375rem; /* rounded-md */
+            margin-bottom: 1rem;
+            height: 20px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%; /* Initial width */
+            background-color: #f97316; /* bg-orange-500 */
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem; /* text-sm */
+            transition: width 0.3s ease-in-out;
+        }
+
+        /* Visual Indicator for Results Table */
+        .visual-indicator-circle {
+            display: inline-block;
+            width: 1rem; /* 16px */
+            height: 1rem; /* 16px */
+            border-radius: 50%;
+            margin-right: 0.5rem; /* 8px */
+            border: 1px solid #a0aec0; /* gray-400 for a subtle border */
+        }
+        .visual-indicator-green { background-color: #34d399 !important; } /* Tailwind green-400 */
+        .visual-indicator-yellow { background-color: #fbbf24 !important; } /* Tailwind yellow-400 */
+        .visual-indicator-red { background-color: #f87171 !important; } /* Tailwind red-400 */
+
+
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #resultsArea, #resultsArea * {
+                visibility: visible;
+            }
+            #resultsArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 10px !important; /* Add some padding for print */
+                border: none;
+                box-shadow: none;
+            }
+            #resultsTitle, #printHeaderInfo, #resultsTableContainer, .results-table, .results-table *, #interpretationGuide, #interpretationGuide * {
+                visibility: visible !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .results-table th, .results-table td {
+                border: 1px solid #ccc !important; 
+                font-size: 9pt !important; /* Smaller font for print */
+                padding: 4px !important;
+            }
+            .results-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            .visual-indicator-circle {
+                border: 1px solid black !important; /* Ensure visibility in B&W */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            .visual-indicator-green { 
+                background-color: #34d399 !important; /* Tailwind green-400 for print */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            .visual-indicator-yellow { 
+                background-color: #fbbf24 !important; /* Tailwind yellow-400 for print */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            .visual-indicator-red { 
+                background-color: #f87171 !important; /* Tailwind red-400 for print */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            /* Ensure textual interpretation is also visible and clear */
+            .result-green, .result-yellow, .result-red {
+                background-color: transparent !important; /* Remove background in print for text cells */
+                color: black !important;
+                font-weight: normal !important;
+            }
+            #interpretationGuide p, #interpretationGuide h3 {
+                 font-size: 9pt !important;
+            }
+             #printHeaderInfo p {
+                font-size: 10pt !important;
+                margin-bottom: 2px !important;
+            }
+            #resultsTitle {
+                font-size: 14pt !important;
+                margin-bottom: 10px !important;
+            }
+        }
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden">
+        <header class="sticky-header p-4 no-print">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <img src="https://placehold.co/100x100/F97316/FFFFFF?text=Psi.se" alt="Logotipo Psicanalisando-se" class="h-10 w-10 sm:h-12 sm:w-12 mr-3 rounded">
+                    <h1 id="mainTitle" class="text-xl sm:text-2xl lg:text-3xl font-bold text-custom-orange-700">Teste COPSOQ II</h1>
+                </div>
+            </div>
+            <div id="versionSelector" class="flex flex-wrap justify-center space-x-2 mb-3">
+                <button id="btnShortVersion" data-version="short" class="version-button version-button-inactive text-sm sm:text-base">Versão Curta</button>
+                <button id="btnMediumVersion" data-version="medium" class="version-button version-button-active text-sm sm:text-base">Versão Média</button>
+                <button id="btnLongVersion" data-version="long" class="version-button version-button-inactive text-sm sm:text-base">Versão Longa</button>
+            </div>
+            <p class="text-sm sm:text-md text-gray-600 text-center">Aplicação para correção e interpretação de resultados psicossociais. Material do Kit NR-01 da Psicanalisando-se</p>
+        </header>
+
+        <main class="p-4 md:p-6">
+            <div class="mb-6 bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-200 no-print">
+                <h2 class="text-lg sm:text-xl font-semibold mb-3 text-custom-orange-600">Identificação (Opcional)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="companyName" class="block text-sm font-medium text-gray-700">Nome da Empresa:</label>
+                        <input type="text" id="companyName" name="companyName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-custom-orange-500 focus:border-custom-orange-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="userRole" class="block text-sm font-medium text-gray-700">Função/Cargo:</label>
+                        <input type="text" id="userRole" name="userRole" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-custom-orange-500 focus:border-custom-orange-500 sm:text-sm">
+                    </div>
+                </div>
+                <hr class="my-4">
+                <h2 class="text-lg sm:text-xl font-semibold mb-3 text-custom-orange-600">Instruções do Questionário</h2>
+                <p class="mb-2 text-sm sm:text-base">Por favor, selecione a versão do questionário desejada e responda a todas as questões. A escala de resposta varia.</p>
+                <ul class="list-disc list-inside text-sm sm:text-base space-y-1">
+                    <li><strong class="font-semibold">Escala Geral 1 (EG1):</strong> 1- Nunca/quase nunca, 2- Raramente, 3- Às vezes, 4- Frequentemente, 5- Sempre</li>
+                    <li><strong class="font-semibold">Escala Geral 2 (EG2):</strong> 1- Nada/quase nada, 2- Um pouco, 3- Moderadamente, 4- Muito, 5- Extremamente</li>
+                    <li><strong class="font-semibold">Saúde Geral (SG):</strong> 1- Excelente, 2- Muito boa, 3- Boa, 4- Razoável, 5- Deficitária</li>
+                </ul>
+            </div>
+            
+            <div id="progressBarContainer" class="progress-bar-container no-print">
+                <div id="progressBar" class="progress-bar">0%</div>
+            </div>
+
+            <form id="copsoqForm" class="bg-white p-4 sm:p-6 rounded-lg no-print">
+                <div id="formError" role="alert" aria-live="polite" class="my-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md" style="display: none;"></div>
+                <div id="questionsContainer"></div>
+
+                <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button type="button" id="calculateButton" class="w-full sm:w-auto bg-custom-orange-500 hover-bg-custom-orange-600 text-white font-semibold py-2.5 px-5 sm:py-3 sm:px-6 rounded-lg shadow-md transition duration-150 ease-in-out">Calcular Resultados</button>
+                    <button type="button" id="clearButton" class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2.5 px-5 sm:py-3 sm:px-6 rounded-lg shadow-md transition duration-150 ease-in-out">Limpar Respostas</button>
+                </div>
+            </form>
+
+            <div id="resultsArea" class="mt-10 bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-200" style="display: none;">
+                <div id="printHeaderInfo" class="mb-4" style="display: none;"></div> 
+                <h2 id="resultsTitle" class="text-xl sm:text-2xl font-bold mb-6 text-center text-custom-orange-700">Resultados do COPSOQ II</h2>
+                <div id="resultsTableContainer" class="overflow-x-auto">
+                </div>
+                <div id="interpretationGuide" class="mt-6 p-4 border border-gray-300 rounded-md bg-white">
+                    <h3 class="text-md sm:text-lg font-semibold mb-2 text-gray-700">Interpretação do Semáforo:</h3>
+                    <p class="text-sm sm:text-base"><span class="inline-block w-4 h-4 mr-2 rounded-full result-green border border-gray-300 align-middle"></span> <strong class="text-green-700">Verde:</strong> Situação favorável para a saúde.</p>
+                    <p class="text-sm sm:text-base"><span class="inline-block w-4 h-4 mr-2 rounded-full result-yellow border border-gray-300 align-middle"></span> <strong class="text-yellow-700">Amarelo:</strong> Situação intermédia.</p>
+                    <p class="text-sm sm:text-base"><span class="inline-block w-4 h-4 mr-2 rounded-full result-red border border-gray-300 align-middle"></span> <strong class="text-red-700">Vermelho:</strong> Risco para a saúde.</p>
+                    <p class="mt-2 text-xs sm:text-sm text-gray-600">Nota: A interpretação baseia-se nos tercis (pontos de corte 2,33 e 3,66). Para escalas positivas, pontuações mais altas são favoráveis. Para escalas negativas e Saúde Geral, pontuações mais baixas são favoráveis.</p>
+                </div>
+                <div class="mt-6 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 no-print">
+                    <button type="button" id="printButton" class="w-full sm:w-auto bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 px-5 sm:py-3 sm:px-6 rounded-lg shadow-md transition duration-150 ease-in-out">Imprimir Resultados</button>
+                </div>
+            </div>
+        </main>
+         <footer class="text-center mt-8 py-6 border-t border-gray-200 bg-gray-100 no-print">
+            <p class="text-sm text-gray-500">&copy; 2024 Aplicação COPSOQ. Desenvolvido pela Psicanalisando-se Soluções como ferramenta de demonstração.</p>
+            <p class="text-xs text-gray-400 mt-1">Este instrumento é uma adaptação para fins educacionais e não substitui a avaliação profissional. As suas respostas são processadas localmente no seu navegador e não são armazenadas ou partilhadas.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Definições de Dados para as Versões do COPSOQ ---
+        const copsoqData = {
+            short: {
+                title: "COPSOQ II - Versão Curta",
+                totalQuestions: 41, 
+                questions: [
+                    { groupTitle: "Responda às seguintes afirmações (Escala: EG1)", items: [
+                        { id: 1, text: "1. A sua carga de trabalho acumula-se por ser mal distribuída?" }, { id: 2, text: "2. Com que frequência não tem tempo para completar todas as tarefas do seu trabalho?" },
+                        { id: 3, text: "3. Precisa trabalhar muito rapidamente?" }, { id: 4, text: "4. O seu trabalho exige a sua atenção constante?" },
+                        { id: 5, text: "5. O seu trabalho exige que tome decisões difíceis?" }, { id: 6, text: "6. O seu trabalho exige emocionalmente de si?" },
+                        { id: 7, text: "7. Tem um elevado grau de influência no seu trabalho?" }, { id: 8, text: "8. O seu trabalho exige que tenha iniciativa?" },
+                        { id: 9, text: "9. O seu trabalho permite-lhe aprender coisas novas?" }, { id: 10, text: "10. No seu local de trabalho, é informado com antecedência sobre decisões importantes, mudanças ou planos para o futuro?" },
+                        { id: 11, text: "11. Recebe toda a informação de que necessita para fazer bem o seu trabalho?" }, { id: 12, text: "12. Sabe exactamente quais as suas responsabilidades?" },
+                        { id: 13, text: "13. O seu trabalho é reconhecido e apreciado pela gerência?" }, { id: 14, text: "14. É tratado de forma justa no seu local de trabalho?" },
+                        { id: 15, text: "15. Com que frequência tem ajuda e apoio do seu superior imediato?" }, { id: 16, text: "16. Existe um bom ambiente de trabalho entre si e os seus colegas?" }
+                    ]},
+                    { groupTitle: "Em relação à sua chefia directa até que ponto considera que... (Escala: EG1)", items: [
+                        { id: 17, text: "17. Oferece aos indivíduos e ao grupo boas oportunidades de desenvolvimento?" }, { id: 18, text: "18. É bom no planeamento do trabalho?" },
+                        { id: 19, text: "19. A gerência confia nos seus funcionários para fazerem o seu trabalho bem?" }, { id: 20, text: "20. Confia na informação que lhe é transmitida pela gerência?" },
+                        { id: 21, text: "21. Os conflitos são resolvidos de uma forma justa?" }, { id: 22, text: "22. O trabalho é igualmente distribuído pelos funcionários?" },
+                        { id: 23, text: "23. Sou sempre capaz de resolver problemas, se tentar o suficiente." }
+                    ]},
+                    { groupTitle: "Responda às seguintes afirmações (Escala: EG2)", items: [
+                        { id: 24, text: "24. O seu trabalho tem algum significado para si?" }, { id: 25, text: "25. Sente que o seu trabalho é importante?" },
+                        { id: 26, text: "26. Sente que os problemas do seu local de trabalho são seus também?" }, { id: 27, text: "27. Quão satisfeito está com o seu trabalho de uma forma global?" },
+                        { id: 28, text: "28. Sente-se preocupado em ficar desempregado?" }
+                    ]},
+                    { groupTitle: "Saúde Geral (Escala: SG)", items: [ { id: 29, text: "29. Em geral, sente que a sua saúde é:" } ]},
+                    { groupTitle: "As próximas questões referem-se ao modo como o seu trabalho afecta a sua vida privada (Escala: EG2)", items: [
+                        { id: 30, text: "30. Sente que o seu trabalho lhe exige muita energia que acaba por afectar a sua vida privada negativamente?" },
+                        { id: 31, text: "31. Sente que o seu trabalho lhe exige muito tempo que acaba por afectar a sua vida privada negativamente?" }
+                    ]},
+                    { groupTitle: "Com que frequência durante as últimas 4 semanas sentiu... (Escala: EG1)", items: [
+                        { id: 32, text: "32. Acordou várias vezes durante a noite e depois não conseguia adormecer novamente?" }, { id: 33, text: "33. Fisicamente exausto?" },
+                        { id: 34, text: "34. Emocionalmente exausto?" }, { id: 35, text: "35. Irritado?" }, { id: 36, text: "36. Ansioso?" }, { id: 37, text: "37. Triste?" }
+                    ]},
+                    { groupTitle: "Nos últimos 12 meses, no seu local de trabalho: (Escala: EG1)", items: [
+                        { id: 38, text: "38. Tem sido alvo de insultos ou provocações verbais?" }, { id: 39, text: "39. Tem sido exposto a assédio sexual indesejado?" },
+                        { id: 40, text: "40. Tem sido exposto a ameaças de violência?" }, { id: 41, text: "41. Tem sido exposto a violência física?" }
+                    ]}
+                ],
+                subscales: [ 
+                    { name: "Exigências quantitativas", items: [1, 2], type: "negative" }, { name: "Ritmo de trabalho", items: [3], type: "negative" },
+                    { name: "Exigências cognitivas", items: [4, 5], type: "negative" }, { name: "Exigências emocionais", items: [6], type: "negative" },
+                    { name: "Influência no trabalho", items: [7], type: "positive" }, { name: "Possibilidades de desenvolvimento", items: [8, 9], type: "positive" },
+                    { name: "Significado do trabalho", items: [24, 25], type: "positive" }, { name: "Compromisso face ao local de trabalho", items: [26], type: "positive" },
+                    { name: "Previsibilidade", items: [10, 11], type: "positive" }, { name: "Transparência do papel laboral desempenhado", items: [12], type: "positive" },
+                    { name: "Recompensas (Reconhecimento)", items: [13, 14], type: "positive" }, { name: "Qualidade da liderança", items: [17,18], type: "positive" }, 
+                    { name: "Apoio social de superiores", items: [15], type: "positive" }, { name: "Comunidade social no trabalho", items: [16], type: "positive" },
+                    { name: "Insegurança Laboral", items: [28], type: "negative" }, { name: "Satisfação laboral", items: [27], type: "positive" },
+                    { name: "Conflito Trabalho/Família", items: [30, 31], type: "negative" }, { name: "Confiança vertical", items: [19, 20], type: "positive" },
+                    { name: "Justiça e respeito", items: [21, 22], type: "positive" }, { name: "Auto-eficácia", items: [23], type: "positive" },
+                    { name: "Saúde Geral", items: [29], type: "special_health" }, { name: "Stress", items: [35, 36], type: "negative" },
+                    { name: "Burnout", items: [33, 34], type: "negative" }, { name: "Problemas em dormir", items: [32], type: "negative" },
+                    { name: "Sintomas Depressivos", items: [37], type: "negative" }, { name: "Comportamentos ofensivos", items: [38, 39, 40, 41], type: "negative" }
+                ],
+                invertedItemsGlobal: []
+            },
+            medium: { 
+                title: "COPSOQ II - Versão Média",
+                totalQuestions: 76, 
+                questions: [
+                    { groupTitle: "Responda às seguintes afirmações (Escala: EG1)", items: [
+                        { id: 1, text: "1. A sua carga de trabalho acumula-se por ser mal distribuída?" }, { id: 2, text: "2. Com que frequência não tem tempo para completar todas as tarefas do seu trabalho?" }, { id: 3, text: "3. Precisa fazer horas-extra?" }, { id: 4, text: "4. Precisa trabalhar muito rapidamente?" }, { id: 5, text: "5. O seu trabalho exige a sua atenção constante?" }, { id: 6, text: "6. O seu trabalho requer que seja bom a propor novas ideias?" }, { id: 7, text: "7. O seu trabalho exige que tome decisões difíceis?" }, { id: 8, text: "8. O seu trabalho exige emocionalmente de si?" }, { id: 9, text: "9. Tem um elevado grau de influência no seu trabalho?" }, { id: 10, text: "10. Participa na escolha das pessoas com quem trabalha?" }, { id: 11, text: "11. Pode influenciar a quantidade de trabalho que lhe compete a si?" }, { id: 12, text: "12. Tem alguma influência sobre o tipo de tarefas que faz?" }, { id: 13, text: "13. O seu trabalho exige que tenha iniciativa?" }, { id: 14, text: "14. O seu trabalho permite-lhe aprender coisas novas?" }, { id: 15, text: "15. O seu trabalho permite-lhe usar as suas habilidades ou perícias?" }, { id: 16, text: "16. No seu local de trabalho, é informado com antecedência sobre decisões importantes, mudanças ou planos para o futuro?" }, { id: 17, text: "17. Recebe toda a informação de que necessita para fazer bem o seu trabalho?" }, { id: 18, text: "18. O seu trabalho apresenta objectivos claros?" }, { id: 19, text: "19. Sabe exactamente quais as suas responsabilidades?" }, { id: 20, text: "20. Sabe exactamente o que é esperado de si?" }, { id: 21, text: "21. O seu trabalho é reconhecido e apreciado pela gerência?" }, { id: 22, text: "22. A gerência do seu local de trabalho respeita-o?" }, { id: 23, text: "23. É tratado de forma justa no seu local de trabalho?" }, { id: 24, text: "24. Faz coisas no seu trabalho que uns concordam mas outros não?" }, { id: 25, text: "25. Por vezes tem que fazer coisas que deveriam ser feitas de outra maneira?" }, { id: 26, text: "26. Por vezes tem que fazer coisas que considera desnecessárias?" }, { id: 27, text: "27. Com que frequência tem ajuda e apoio dos seus colegas de trabalho?" }, { id: 28, text: "28. Com que frequência os seus colegas estão dispostos a ouvi-lo(a) sobre os seus problemas de trabalho?" }, { id: 29, text: "29. Com que frequência os seus colegas falam consigo acerca do seu desempenho laboral?" }, { id: 30, text: "30. Com que frequência o seu superior imediato fala consigo sobre como está a decorrer o seu trabalho?" }, { id: 31, text: "31. Com que frequência tem ajuda e apoio do seu superior imediato?" }, { id: 32, text: "32. Com que frequência é que o seu superior imediato fala consigo em relação ao seu desempenho laboral?" }, { id: 33, text: "33. Existe um bom ambiente de trabalho entre si e os seus colegas?" }, { id: 34, text: "34. Existe uma boa cooperação entre os colegas de trabalho?" }, { id: 35, text: "35. No seu local de trabalho sente-se parte de uma comunidade?" },
+                        { id: 36, text: "36. Em relação à sua chefia directa até que ponto considera que... Oferece aos indivíduos e ao grupo boas oportunidades de desenvolvimento?" }, { id: 37, text: "37. Em relação à sua chefia directa até que ponto considera que... Dá prioridade à satisfação no trabalho?" }, { id: 38, text: "38. Em relação à sua chefia directa até que ponto considera que... É bom no planeamento do trabalho?" }, { id: 39, text: "39. Em relação à sua chefia directa até que ponto considera que... É bom a resolver conflitos?" },
+                        { id: 40, text: "40. As questões seguintes referem-se ao seu local de trabalho no seu todo. Os funcionários ocultam informações uns dos outros?" }, { id: 41, text: "41. As questões seguintes referem-se ao seu local de trabalho no seu todo. Os funcionários ocultam informação à gerência?" }, { id: 42, text: "42. As questões seguintes referem-se ao seu local de trabalho no seu todo. Os funcionários confiam uns nos outros de um modo geral?" }, { id: 43, text: "43. As questões seguintes referem-se ao seu local de trabalho no seu todo. A gerência confia nos seus funcionários para fazerem o seu trabalho bem?" }, { id: 44, text: "44. As questões seguintes referem-se ao seu local de trabalho no seu todo. Confia na informação que lhe é transmitida pela gerência?" }, { id: 45, text: "45. As questões seguintes referem-se ao seu local de trabalho no seu todo. A gerência oculta informação aos seus funcionários?" }, { id: 46, text: "46. As questões seguintes referem-se ao seu local de trabalho no seu todo. Os conflitos são resolvidos de uma forma justa?" }, { id: 47, text: "47. As questões seguintes referem-se ao seu local de trabalho no seu todo. As sugestões dos funcionários são tratadas de forma séria pela gerência?" }, { id: 48, text: "48. As questões seguintes referem-se ao seu local de trabalho no seu todo. O trabalho é igualmente distribuído pelos funcionários?" },
+                    ]},
+                    { groupTitle: "Responda às seguintes afirmações (Escala: EG2)", items: [
+                        { id: 49, text: "49. Sou sempre capaz de resolver problemas, se tentar o suficiente." }, { id: 50, text: "50. É-me fácil seguir os meus planos e atingir os meus objectivos." }, { id: 51, text: "51. O seu trabalho tem algum significado para si?" }, { id: 52, text: "52. Sente que o seu trabalho é importante?" }, { id: 53, text: "53. Sente-se motivado e envolvido com o seu trabalho?" }, { id: 54, text: "54. Gosta de falar com os outros sobre o seu local de trabalho?" }, { id: 55, text: "55. Sente que os problemas do seu local de trabalho são seus também?" },
+                        { id: 56, text: "56. Em relação ao seu trabalho em geral, quão satisfeito está com... As suas perspectivas de trabalho?" }, { id: 57, text: "57. Em relação ao seu trabalho em geral, quão satisfeito está com... As condições físicas do seu local de trabalho?" }, { id: 58, text: "58. Em relação ao seu trabalho em geral, quão satisfeito está com... A forma como as suas capacidades são utilizadas?" }, { id: 59, text: "59. Em relação ao seu trabalho em geral, quão satisfeito está com... O seu trabalho de uma forma global?" }, { id: 60, text: "60. Sente-se preocupado em ficar desempregado?" },
+                    ]},
+                    { groupTitle: "Saúde Geral (Escala: SG)", items: [ { id: 61, text: "61. Em geral, sente que a sua saúde é:" } ]},
+                    { groupTitle: "As próximas três questões referem-se ao modo como o seu trabalho afecta a sua vida privada (Escala: EG2)", items: [
+                        { id: 62, text: "62. Sente que o seu trabalho lhe exige muita energia que acaba por afectar a sua vida privada negativamente?" }, { id: 63, text: "63. Sente que o seu trabalho lhe exige muito tempo que acaba por afectar a sua vida privada negativamente?" }, { id: 64, text: "64. A sua família e os seus amigos dizem-lhe que trabalha demais?" },
+                    ]},
+                    { groupTitle: "Com que frequência durante as últimas 4 semanas sentiu... (Escala: EG1)", items: [
+                        { id: 65, text: "65. Dificuldade a adormecer?" }, { id: 66, text: "66. Acordou várias vezes durante a noite e depois não conseguia adormecer novamente?" }, { id: 67, text: "67. Fisicamente exausto?" }, { id: 68, text: "68. Emocionalmente exausto?" }, { id: 69, text: "69. Irritado?" }, { id: 70, text: "70. Ansioso?" }, { id: 71, text: "71. Triste?" }, { id: 72, text: "72. Falta de interesse por coisas quotidianas?" },
+                    ]},
+                    { groupTitle: "Nos últimos 12 meses, no seu local de trabalho: (Escala: EG1)", items: [
+                        { id: 73, text: "73. Tem sido alvo de insultos ou provocações verbais?" }, { id: 74, text: "74. Tem sido exposto a assédio sexual indesejado?" }, { id: 75, text: "75. Tem sido exposto a ameaças de violência?" }, { id: 76, text: "76. Tem sido exposto a violência física?" },
+                    ]}
+                ],
+                subscales: [ 
+                    { name: "Exigências quantitativas", items: [1, 2, 3], type: "negative" }, { name: "Ritmo de trabalho", items: [4], type: "negative" }, { name: "Exigências cognitivas", items: [5, 6, 7], type: "negative" }, { name: "Exigências emocionais", items: [8], type: "negative" }, { name: "Influência no trabalho", items: [9, 10, 11, 12], type: "positive" }, { name: "Possibilidades de desenvolvimento", items: [13, 14, 15], type: "positive" }, { name: "Previsibilidade", items: [16, 17], type: "positive" }, { name: "Transparência do papel laboral desempenhado", items: [18, 19, 20], type: "positive" }, { name: "Recompensas", items: [21, 22, 23], type: "positive" }, { name: "Conflitos laborais", items: [24, 25, 26], type: "negative" }, { name: "Apoio social de colegas", items: [27, 28, 29], type: "positive" }, { name: "Apoio social de superiores", items: [30, 31, 32], type: "positive" }, { name: "Comunidade social no trabalho", items: [33, 34, 35], type: "positive" }, { name: "Qualidade da liderança", items: [36, 37, 38, 39], type: "positive" }, { name: "Confiança horizontal", items: [40, 41, 42], type: "negative" },  { name: "Confiança vertical", items: [43, 44, 45], type: "positive" },  { name: "Justiça e respeito", items: [46, 47, 48], type: "positive" }, { name: "Auto-eficácia", items: [49, 50], type: "positive" }, { name: "Significado do trabalho", items: [51, 52, 53], type: "positive" }, { name: "Compromisso face ao local de trabalho", items: [54, 55], type: "positive" }, { name: "Satisfação no trabalho", items: [56, 57, 58, 59], type: "positive" }, { name: "Insegurança Laboral", items: [60], type: "negative" }, { name: "Saúde Geral", items: [61], type: "special_health" }, { name: "Conflito trabalho/família", items: [62, 63, 64], type: "negative" }, { name: "Problemas em dormir", items: [65, 66], type: "negative" }, { name: "Burnout", items: [67, 68], type: "negative" }, { name: "Stress", items: [69, 70], type: "negative" }, { name: "Sintomas depressivos", items: [71, 72], type: "negative" }, { name: "Comportamentos ofensivos", items: [73, 74, 75, 76], type: "negative" }
+                ],
+                invertedItemsGlobal: [42, 45]
+            },
+            long: {
+                title: "COPSOQ II - Versão Longa",
+                totalQuestions: 119, 
+                questions: [
+                    { groupTitle: "Responda às seguintes afirmações (Escala: EG1)", items: [
+                        { id: 1, text: "1. A sua carga de trabalho acumula-se por ser mal distribuída?" }, { id: 2, text: "2. Com que frequência não tem tempo para completar todas as tarefas do seu trabalho?" }, { id: 3, text: "3. Precisa fazer horas-extra?" }, { id: 4, text: "4. Precisa trabalhar muito rapidamente?" },
+                        { id: 5, text: "5. O seu trabalho exige a sua atenção constante?" }, { id: 6, text: "6. O seu trabalho requer que seja bom a propor novas ideias?" }, { id: 7, text: "7. O seu trabalho exige que tome decisões difíceis?" }, { id: 8, text: "8. O seu trabalho coloca-o em situações emocionalmente perturbadoras?" }, { id: 9, text: "9. O seu trabalho exige emocionalmente de si?" }, { id: 10, text: "10. Sente-se emocionalmente envolvido com o seu trabalho?" },
+                        { id: 11, text: "11. O seu trabalho requer que não manifeste a sua opinião?" }, { id: 12, text: "12. O seu trabalho requer que esconda os seus sentimentos?" }, { id: 13, text: "13. É-lhe exigido que trate todas as pessoas de forma igual embora não se sinta satisfeito com isso?" }, { id: 14, text: "14. É-lhe exigido que seja simpático com todos, embora sinta que o mesmo não lhe é retribuído?" },
+                        { id: 15, text: "15. Tem um elevado grau de influência no seu trabalho?" }, { id: 16, text: "16. Participa na escolha das pessoas com quem trabalha?" }, { id: 17, text: "17. Pode influenciar a quantidade de trabalho que lhe compete a si?" }, { id: 18, text: "18. Tem alguma influência sobre o tipo de tarefas que faz?" },
+                        { id: 19, text: "19. O seu trabalho exige que tenha iniciativa?" }, { id: 20, text: "20. O seu trabalho permite-lhe aprender coisas novas?" }, { id: 21, text: "21. O seu trabalho permite-lhe usar as suas habilidades ou perícias?" }, { id: 22, text: "22. O seu trabalho é variado?" },
+                        { id: 23, text: "23. No seu local de trabalho, é informado com antecedência sobre decisões importantes, mudanças ou planos para o futuro?" }, { id: 24, text: "24. Recebe toda a informação de que necessita para fazer bem o seu trabalho?" }, { id: 25, text: "25. O seu trabalho apresenta objectivos claros?" }, { id: 26, text: "26. Sabe exactamente quais as suas responsabilidades?" }, { id: 27, text: "27. Sabe exactamente o que é esperado de si?" },
+                        { id: 28, text: "28. O seu trabalho é reconhecido e apreciado pela gerência?" }, { id: 29, text: "29. Há boas perspectivas no seu emprego?" }, { id: 30, text: "30. A gerência do seu local de trabalho respeita-o?" }, { id: 31, text: "31. É tratado de forma justa no seu local de trabalho?" },
+                        { id: 32, text: "32. Faz coisas no seu trabalho que uns concordam mas outros não?" }, { id: 33, text: "33. No seu trabalho são-lhe colocadas exigências contraditórias?" }, { id: 34, text: "34. Por vezes tem que fazer coisas que deveriam ser feitas de outra maneira?" }, { id: 35, text: "35. Por vezes tem que fazer coisas que considera desnecessárias?" },
+                        { id: 36, text: "36. Com que frequência tem ajuda e apoio dos seus colegas de trabalho?" }, { id: 37, text: "37. Com que frequência os seus colegas estão dispostos a ouvi-lo(a) sobre os seus problemas de trabalho?" }, { id: 38, text: "38. Com que frequência os seus colegas falam consigo acerca do seu desempenho laboral?" }, { id: 39, text: "39. Com que frequência o seu superior imediato fala consigo sobre como está a decorrer o seu trabalho?" }, { id: 40, text: "40. Com que frequência tem ajuda e apoio do seu superior imediato?" }, { id: 41, text: "41. Com que frequência é que o seu superior imediato fala consigo em relação ao seu desempenho laboral?" },
+                        { id: 42, text: "42. Existe um bom ambiente de trabalho entre si e os seus colegas?" }, { id: 43, text: "43. Existe uma boa cooperação entre os colegas de trabalho?" }, { id: 44, text: "44. No seu local de trabalho sente-se parte de uma comunidade?" }
+                    ]},
+                    { groupTitle: "Em relação à sua chefia directa até que ponto considera que... (Escala: EG1)", items: [
+                        { id: 45, text: "45. Oferece aos indivíduos e ao grupo boas oportunidades de desenvolvimento?" }, { id: 46, text: "46. Dá prioridade à satisfação no trabalho?" }, { id: 47, text: "47. É bom no planeamento do trabalho?" }, { id: 48, text: "48. É bom a resolver conflitos?" }
+                    ]},
+                    { groupTitle: "As questões seguintes referem-se ao seu local de trabalho no seu todo (Escala: EG1)", items: [
+                        { id: 49, text: "49. Os funcionários ocultam informações uns dos outros?" }, { id: 50, text: "50. Os funcionários ocultam informação à gerência?" }, { id: 51, text: "51. Os funcionários confiam uns nos outros de um modo geral?" }, 
+                        { id: 52, text: "52. A gerência confia nos seus funcionários para fazerem o seu trabalho bem?" }, { id: 53, text: "53. Confia na informação que lhe é transmitida pela gerência?" }, { id: 54, text: "54. A gerência oculta informação aos seus funcionários?" }, 
+                        { id: 55, text: "55. Os conflitos são resolvidos de uma forma justa?" }, { id: 56, text: "56. Os funcionários são apreciados quando fazem um bom trabalho?" }, { id: 57, text: "57. As sugestões dos funcionários são tratadas de forma séria pela gerência?" }, { id: 58, text: "58. O trabalho é igualmente distribuído pelos funcionários?" },
+                        { id: 59, text: "59. Os homens e as mulheres são tratados da mesma forma?" }, { id: 60, text: "60. Existe lugar para funcionários de diferentes raças e religiões?" }, { id: 61, text: "61. Existe lugar para funcionários com doenças ou deficiências?" }, { id: 62, text: "62. Existe lugar para funcionários da terceira idade?" }
+                    ]},
+                    { groupTitle: "Responda às seguintes afirmações (Escala: EG2)", items: [
+                        { id: 63, text: "63. O seu trabalho tem significado?" }, { id: 64, text: "64. Sente que o seu trabalho é importante?" }, { id: 65, text: "65. Sente-se motivado e envolvido com o seu trabalho?" }, { id: 66, text: "66. Gosta de falar com os outros sobre o seu local de trabalho?" }, { id: 67, text: "67. Sente que os problemas do seu local de trabalho são seus também?" }, { id: 68, text: "68. O seu local de trabalho é de grande importância pessoal para si?" },
+                        { id: 69, text: "69. Em relação ao seu trabalho em geral, quão satisfeito está com... As suas perspectivas de trabalho?" }, { id: 70, text: "70. Em relação ao seu trabalho em geral, quão satisfeito está com... As condições físicas do seu local de trabalho?" }, { id: 71, text: "71. Em relação ao seu trabalho em geral, quão satisfeito está com... A forma como as suas capacidades são utilizadas?" }, { id: 72, text: "72. Em relação ao seu trabalho em geral, quão satisfeito está com... O seu trabalho de uma forma global?" },
+                        { id: 73, text: "73. Sente-se preocupado com... Ficar desempregado?" }, { id: 74, text: "74. Sente-se preocupado com... Que uma nova tecnologia o torne dispensável?" }, { id: 75, text: "75. Sente-se preocupado com... Dificuldade em conseguir outro trabalho caso ficasse desempregado?" }, { id: 76, text: "76. Sente-se preocupado com... Ser transferido para outro local de trabalho contra a sua vontade?" }
+                    ]},
+                    { groupTitle: "Saúde Geral (Escala: SG)", items: [ { id: 77, text: "77. Em geral, sente que a sua saúde é:" } ]},
+                    { groupTitle: "As próximas três questões referem-se ao modo como o seu trabalho afecta a sua vida privada (Escala: EG2)", items: [
+                        { id: 78, text: "78. Sente que o seu trabalho lhe exige muita energia que acaba por afectar a sua vida privada negativamente?" }, { id: 79, text: "79. Sente que o seu trabalho lhe exige muito tempo que acaba por afectar a sua vida privada negativamente?" }, { id: 80, text: "80. A sua família e os seus amigos dizem-lhe que trabalha demais?" }
+                    ]},
+                    { groupTitle: "As próximas duas questões referem-se ao modo como a sua vida privada afecta o seu trabalho (Escala: EG2)", items: [
+                        { id: 81, text: "81. Sente que a sua vida privada lhe exige muita energia e que acaba por afectar o seu trabalho negativamente?" }, { id: 82, text: "82. Sente que a sua vida privada lhe exige muito tempo e que acaba por afectar o seu trabalho negativamente?" }
+                    ]},
+                    { groupTitle: "Com que frequência durante as últimas 4 semanas sentiu... (Escala: EG1)", items: [
+                        { id: 83, text: "83. Dificuldade a adormecer?" }, { id: 84, text: "84. Dormiu mal e de forma sobressaltada?" }, { id: 85, text: "85. Acordou demasiado cedo e depois teve dificuldade em adormecer novamente?" }, { id: 86, text: "86. Acordou várias vezes durante a noite e depois não conseguia adormecer novamente?" },
+                        { id: 87, text: "87. Cansado?" }, { id: 88, text: "88. Esgotado?" }, { id: 89, text: "89. Fisicamente exausto?" }, { id: 90, text: "90. Emocionalmente exausto?" },
+                        { id: 91, text: "91. Dificuldades em relaxar?" }, { id: 92, text: "92. Irritado?" }, { id: 93, text: "93. Tenso?" }, { id: 94, text: "94. Ansioso?" },
+                        { id: 95, text: "95. Triste?" }, { id: 96, text: "96. Falta de auto-confiança?" }, { id: 97, text: "97. Peso na consciência ou sentimento de culpa?" }, { id: 98, text: "98. Falta de interesse por coisas quotidianas?" },
+                        { id: 99, text: "99. Dores de barriga?" }, { id: 100, text: "100. Aperto ou dor no peito?" }, { id: 101, text: "101. Dores de cabeça?" }, { id: 102, text: "102. Palpitações?" }, { id: 103, text: "103. Tensão em vários músculos?" },
+                        { id: 104, text: "104. Dificuldade em concentrar-se?" }, { id: 105, text: "105. Dificuldade em tomar decisões?" }, { id: 106, text: "106. Dificuldade em lembrar-se de algo?" }, { id: 107, text: "107. Dificuldade em pensar claramente?" }
+                    ]},
+                    { groupTitle: "Responda às seguintes afirmações (Escala: EG1)", items: [
+                        { id: 108, text: "108. Sou sempre capaz de resolver problemas, se tentar o suficiente." }, { id: 109, text: "109. Mesmo que as pessoas trabalhem contra mim, encontro sempre forma de atingir o que pretendo." }, { id: 110, text: "110. É-me fácil seguir os meus planos e atingir os meus objectivos." },
+                        { id: 111, text: "111. Sinto-me confiante em lidar com acontecimentos inesperados." }, { id: 112, text: "112. Quando tenho um problema, usualmente tenho várias maneiras de lidar com o mesmo." }, { id: 113, text: "113. Independentemente do que acontecer, costumo encontrar soluções para os meus problemas." }
+                    ]},
+                    { groupTitle: "Nos últimos 12 meses, no seu local de trabalho: (Escala: EG1)", items: [
+                        { id: 114, text: "114. Tem-se envolvido em conflitos ou discussões?" }, { id: 115, text: "115. Tem sido alvo de rumores ou calúnias?" }, { id: 116, text: "116. Tem sido alvo de insultos ou provocações verbais?" },
+                        { id: 117, text: "117. Tem sido exposto a assédio sexual indesejado?" }, { id: 118, text: "118. Tem sido exposto a ameaças de violência?" }, { id: 119, text: "119. Tem sido exposto a violência física?" }
+                    ]}
+                ],
+                subscales: [ 
+                    { name: "Exigências quantitativas", items: [1, 2, 3], type: "negative" }, { name: "Ritmo de trabalho", items: [4], type: "negative" }, { name: "Exigências cognitivas", items: [5, 6, 7], type: "negative" },
+                    { name: "Exigências emocionais", items: [8, 9, 10], type: "negative" }, { name: "Exigências para esconder emoções", items: [11, 12, 13, 14], type: "negative" }, { name: "Influência no trabalho", items: [15, 16, 17, 18], type: "positive" },
+                    { name: "Possibilidades de desenvolvimento", items: [19, 20, 21], type: "positive" }, { name: "Variação no trabalho", items: [22], type: "positive" }, { name: "Significado do trabalho", items: [63, 64, 65], type: "positive" },
+                    { name: "Compromisso face ao local de trabalho", items: [66, 67, 68], type: "positive" }, { name: "Previsibilidade", items: [23, 24], type: "positive" }, { name: "Transparência do papel laboral desempenhado", items: [25, 26, 27], type: "positive" }, 
+                    { name: "Recompensas", items: [28, 29, 30], type: "positive" }, { name: "Conflitos de papéis laborais", items: [32, 33, 34, 35], type: "negative" }, { name: "Qualidade da liderança", items: [45, 46, 47, 48], type: "positive" },
+                    { name: "Apoio social de superiores", items: [39, 40, 41], type: "positive" }, { name: "Apoio social de colegas", items: [36, 37, 38], type: "positive" }, { name: "Comunidade social no trabalho", items: [42, 43, 44], type: "positive" },
+                    { name: "Confiança horizontal", items: [49, 50, 51], type: "negative" },  { name: "Confiança vertical", items: [52, 53, 54], type: "positive" }, { name: "Justiça e respeito", items: [31, 55, 56, 57, 58], type: "positive" }, 
+                    { name: "Responsabilidade social", items: [59, 60, 61, 62], type: "positive" }, { name: "Auto-eficácia", items: [108, 109, 110, 111, 112, 113], type: "positive" }, { name: "Satisfação no trabalho", items: [69, 70, 71, 72], type: "positive" },
+                    { name: "Insegurança Laboral", items: [73, 74, 75, 76], type: "negative" }, { name: "Saúde Geral", items: [77], type: "special_health" }, { name: "Conflito Trabalho/Família", items: [78, 79, 80], type: "negative" },
+                    { name: "Conflito Família/Trabalho", items: [81, 82], type: "negative" }, { name: "Problemas em dormir", items: [83, 84, 85, 86], type: "negative" },
+                    { name: "Burnout (Extenuação)", items: [87, 88, 89, 90], type: "negative" }, { name: "Stress", items: [91, 92, 93, 94], type: "negative" },
+                    { name: "Sintomas Depressivos", items: [95, 96, 97, 98], type: "negative" }, { name: "Stress somático", items: [99, 100, 101, 102, 103], type: "negative" },
+                    { name: "Stress cognitivo", items: [104, 105, 106, 107], type: "negative" }, { name: "Comportamentos ofensivos", items: [114, 115, 116, 117, 118, 119], type: "negative" }
+                ],
+                invertedItemsGlobal: [51, 54] 
+            }
+        };
+
+        let currentVersionKey = 'medium'; 
+
+        // --- Elementos DOM ---
+        const questionsContainer = document.getElementById('questionsContainer');
+        const calculateButton = document.getElementById('calculateButton');
+        const clearButton = document.getElementById('clearButton');
+        const resultsArea = document.getElementById('resultsArea');
+        const resultsTableContainer = document.getElementById('resultsTableContainer');
+        const formErrorDiv = document.getElementById('formError');
+        const mainTitleElement = document.getElementById('mainTitle'); 
+        const resultsTitleElement = document.getElementById('resultsTitle'); 
+        const versionSelector = document.getElementById('versionSelector');
+        const progressBar = document.getElementById('progressBar');
+        const copsoqForm = document.getElementById('copsoqForm');
+        const companyNameInput = document.getElementById('companyName');
+        const userRoleInput = document.getElementById('userRole');
+        const printHeaderInfo = document.getElementById('printHeaderInfo');
+        // const generatePdfButton = document.getElementById('generatePdfButton'); // Removido
+        const printButton = document.getElementById('printButton');
+
+
+        // --- Funções ---
+        function updateProgressBar() {
+            const versionData = copsoqData[currentVersionKey];
+            const totalQuestions = versionData.totalQuestions;
+            let answeredCount = 0;
+            
+            versionData.questions.forEach(group => {
+                group.items.forEach(q => {
+                    if (document.querySelector(`input[name="q${q.id}"]:checked`)) {
+                        answeredCount++;
+                    }
+                });
+            });
+            
+            const percentage = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+            progressBar.style.width = `${percentage}%`;
+            progressBar.textContent = `${percentage}%`;
+        }
+
+
+        function setActiveButton(selectedVersionKey) {
+            versionSelector.querySelectorAll('button').forEach(btn => {
+                if (btn.dataset.version === selectedVersionKey) {
+                    btn.classList.remove('version-button-inactive');
+                    btn.classList.add('version-button-active');
+                } else {
+                    btn.classList.remove('version-button-active');
+                    btn.classList.add('version-button-inactive');
+                }
+            });
+        }
+
+        function loadQuestions(versionKey) {
+            currentVersionKey = versionKey;
+            const versionData = copsoqData[currentVersionKey];
+
+            mainTitleElement.textContent = versionData.title; 
+            resultsTitleElement.textContent = `Resultados do ${versionData.title}`; 
+            questionsContainer.innerHTML = ''; 
+            formErrorDiv.style.display = 'none';
+            resultsArea.style.display = 'none';
+            copsoqForm.reset(); 
+            setActiveButton(versionKey);
+
+            versionData.questions.forEach(group => {
+                const fieldset = document.createElement('fieldset'); 
+                fieldset.className = 'question-group';
+                
+                const legend = document.createElement('legend'); 
+                legend.textContent = group.groupTitle;
+                fieldset.appendChild(legend);
+
+                group.items.forEach(q => {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'question-item py-2';
+                    questionDiv.id = `question-item-${q.id}`; 
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `q${q.id}-val1`; 
+                    label.textContent = q.text;
+                    label.className = 'block text-sm font-medium text-gray-900 mb-2';
+                    questionDiv.appendChild(label);
+
+                    const radioGroupDiv = document.createElement('div');
+                    radioGroupDiv.className = 'flex flex-wrap gap-x-4 gap-y-2';
+                    radioGroupDiv.setAttribute('role', 'radiogroup'); 
+                    radioGroupDiv.setAttribute('aria-labelledby', `label-q${q.id}`); 
+                    
+
+                    let scoreLabels = ["1", "2", "3", "4", "5"];
+                    const healthQuestionIds = { short: 29, medium: 61, long: 77 };
+                    if (q.id === healthQuestionIds[currentVersionKey]) { 
+                        scoreLabels = ["1 (Excelente)", "2 (Muito Boa)", "3 (Boa)", "4 (Razoável)", "5 (Deficitária)"];
+                    }
+
+                    for (let i = 1; i <= 5; i++) {
+                        const radioLabel = document.createElement('label');
+                        radioLabel.className = 'radio-label text-sm';
+                        
+                        const radioInput = document.createElement('input');
+                        radioInput.type = 'radio';
+                        radioInput.name = `q${q.id}`; 
+                        radioInput.id = `q${q.id}-val${i}`; 
+                        radioInput.value = i;
+                        radioInput.required = true; 
+                        radioInput.className = 'radio-input form-radio h-4 w-4 text-custom-orange-600-radio border-gray-300 focus:ring-custom-orange-500';
+                        
+                        radioLabel.appendChild(radioInput);
+                        radioLabel.appendChild(document.createTextNode(scoreLabels[i-1]));
+                        radioGroupDiv.appendChild(radioLabel);
+                    }
+                    questionDiv.appendChild(radioGroupDiv);
+                    fieldset.appendChild(questionDiv);
+                });
+                questionsContainer.appendChild(fieldset);
+            });
+            updateProgressBar(); 
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function prepareHeaderInfoForExport() {
+            const company = companyNameInput.value.trim();
+            const role = userRoleInput.value.trim();
+            let headerHTML = '';
+            if (company) {
+                headerHTML += `<p class="text-sm text-gray-700 mb-1"><strong>Empresa:</strong> ${company}</p>`;
+            }
+            if (role) {
+                headerHTML += `<p class="text-sm text-gray-700"><strong>Função/Cargo:</strong> ${role}</p>`;
+            }
+            if (headerHTML) {
+                printHeaderInfo.innerHTML = headerHTML;
+                printHeaderInfo.style.display = 'block';
+            } else {
+                printHeaderInfo.style.display = 'none';
+            }
+        }
+
+        function clearHeaderInfoAfterExport() {
+            printHeaderInfo.innerHTML = '';
+            printHeaderInfo.style.display = 'none';
+        }
+
+
+        function calculateResults() {
+            formErrorDiv.style.display = 'none'; 
+            formErrorDiv.textContent = '';
+
+            document.querySelectorAll('.highlight-error').forEach(el => {
+                el.classList.remove('highlight-error');
+            });
+            document.querySelectorAll('fieldset.highlight-error').forEach(el => {
+                el.classList.remove('highlight-error');
+            });
+
+
+            const versionData = copsoqData[currentVersionKey];
+            const answers = {};
+            let allAnswered = true;
+            let firstUnansweredFieldset = null; 
+
+            for (const group of versionData.questions) {
+                for (const q of group.items) {
+                    const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                    if (selected) {
+                        answers[q.id] = parseInt(selected.value);
+                    } else {
+                        allAnswered = false;
+                        if (firstUnansweredFieldset === null) { 
+                            const questionItemDiv = document.getElementById(`question-item-${q.id}`);
+                            if(questionItemDiv) {
+                                firstUnansweredFieldset = questionItemDiv.closest('fieldset');
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            if (!allAnswered) {
+                const errorMsg = "Por favor, responda a todas as questões antes de calcular os resultados.";
+                formErrorDiv.textContent = errorMsg;
+                formErrorDiv.style.display = 'block';
+                
+                if (firstUnansweredFieldset) {
+                    firstUnansweredFieldset.classList.add('highlight-error');
+                    firstUnansweredFieldset.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                     formErrorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+            const subscaleScores = {};
+            versionData.subscales.forEach(subscale => {
+                let sum = 0;
+                let count = 0;
+                subscale.items.forEach(itemId => {
+                    if (answers[itemId] === undefined) {
+                        return; 
+                    }
+                    let score = answers[itemId];
+                    if (versionData.invertedItemsGlobal && versionData.invertedItemsGlobal.includes(itemId)) {
+                        score = 6 - score; 
+                    }
+                    sum += score;
+                    count++;
+                });
+
+                const average = count > 0 ? (sum / count) : 0;
+                let interpretation = '';
+                let interpretationClass = '';
+                let visualClass = ''; 
+                const mean = average;
+                const cutOff1 = 2.33;
+                const cutOff2 = 3.66;
+
+                if (subscale.type === "positive") { 
+                    if (mean < cutOff1) { interpretation = "Risco"; interpretationClass = "result-red"; visualClass = "visual-indicator-red"; }
+                    else if (mean <= cutOff2) { interpretation = "Intermédio"; interpretationClass = "result-yellow"; visualClass = "visual-indicator-yellow"; }
+                    else { interpretation = "Favorável"; interpretationClass = "result-green"; visualClass = "visual-indicator-green"; }
+                } else if (subscale.type === "negative") { 
+                    if (mean < cutOff1) { interpretation = "Favorável"; interpretationClass = "result-green"; visualClass = "visual-indicator-green"; }
+                    else if (mean <= cutOff2) { interpretation = "Intermédio"; interpretationClass = "result-yellow"; visualClass = "visual-indicator-yellow"; }
+                    else { interpretation = "Risco"; interpretationClass = "result-red"; visualClass = "visual-indicator-red"; }
+                } else if (subscale.type === "special_health") { 
+                    if (mean <= cutOff1) { interpretation = "Favorável"; interpretationClass = "result-green"; visualClass = "visual-indicator-green"; } 
+                    else if (mean <= cutOff2) { interpretation = "Intermédio"; interpretationClass = "result-yellow"; visualClass = "visual-indicator-yellow"; } 
+                    else { interpretation = "Risco"; interpretationClass = "result-red"; visualClass = "visual-indicator-red"; }
+                }
+                
+                // console.log(`   [DEBUG] Subescala: ${subscale.name}, Interpretação: ${interpretation}, Classe: ${interpretationClass}, Visual: ${visualClass}`);
+                subscaleScores[subscale.name] = {
+                    average: average.toFixed(2),
+                    interpretation: interpretation,
+                    interpretationClass: interpretationClass,
+                    visualClass: visualClass
+                };
+            });
+            displayResults(subscaleScores);
+        }
+
+        function displayResults(scores) {
+            resultsTableContainer.innerHTML = ''; 
+            const table = document.createElement('table');
+            table.className = 'min-w-full results-table bg-white shadow-md rounded-lg';
+            
+            const thead = document.createElement('thead');
+            thead.className = 'bg-gray-200';
+            thead.innerHTML = `
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Subescala</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Média</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Interpretação</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Nível de Risco (Visual)</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            tbody.className = 'bg-white divide-y divide-gray-200';
+            for (const key in scores) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${key}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">${scores[key].average}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold ${scores[key].interpretationClass}">${scores[key].interpretation}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-center">
+                        <span class="visual-indicator-circle ${scores[key].visualClass}"></span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            }
+            table.appendChild(tbody);
+            resultsTableContainer.appendChild(table);
+            resultsArea.style.display = 'block';
+            resultsArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearForm() {
+            copsoqForm.reset();
+            companyNameInput.value = ''; 
+            userRoleInput.value = '';
+            resultsArea.style.display = 'none';
+            resultsTableContainer.innerHTML = '';
+            formErrorDiv.style.display = 'none';
+            formErrorDiv.textContent = '';
+             document.querySelectorAll('.highlight-error').forEach(el => {
+                el.classList.remove('highlight-error');
+            });
+            updateProgressBar(); 
+        }
+
+        function handlePrintResults() {
+            prepareHeaderInfoForExport();
+            window.print();
+            setTimeout(clearHeaderInfoAfterExport, 1000);
+        }
+
+
+        // --- Event Listeners ---
+        calculateButton.addEventListener('click', calculateResults);
+        clearButton.addEventListener('click', () => {
+            clearForm();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        versionSelector.addEventListener('click', (event) => {
+            if (event.target.tagName === 'BUTTON') {
+                const versionKey = event.target.dataset.version;
+                if (versionKey && copsoqData[versionKey]) {
+                    loadQuestions(versionKey);
+                }
+            }
+        });
+        
+        copsoqForm.addEventListener('change', updateProgressBar);
+        printButton.addEventListener('click', handlePrintResults);
+
+
+        // --- Initial Load ---
+        window.onload = () => {
+            loadQuestions(currentVersionKey); 
+        };
+    </script>
+</body>
+</html>
